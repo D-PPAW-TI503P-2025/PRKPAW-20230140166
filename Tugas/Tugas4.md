@@ -6,8 +6,8 @@
 ## 2) `POST /api/presensi/check-out`
 ![check-out](./ss/check-out.png)
 
-## 4) `Database Setelah Presensi`
+## 3) `Database Setelah Presensi`
 ![database setelah presensi](./ss/database-setelah-presensi.png)
 
-## 5) `GET /api/reports/daily`
+## 4) `GET /api/reports/daily`
 ![endpoint report](./ss/endpoint_report.png)
