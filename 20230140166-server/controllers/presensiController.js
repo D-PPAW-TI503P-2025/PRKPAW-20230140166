@@ -1,12 +1,15 @@
 // 1. Ganti sumber data dari array ke model Sequelize
-const { Presensi } = require("../models");
+const { Presensi, User, Sequelize } = require("../models");
 const { format } = require("date-fns-tz");
+const { Op } = Sequelize;
 const timeZone = "Asia/Jakarta";
 
 exports.CheckIn = async (req, res) => {
   // 2. Gunakan try...catch untuk error handling
   try {
-    const { id: userId, nama: userName } = req.user;
+    const { id: userId } = req.user;
+    const userName = req.user?.nama || req.user?.name || ""; 
+    const { latitude, longitude } = req.body;
     const waktuSekarang = new Date();
 
     // 3. Ubah cara mencari data menggunakan 'findOne' dari Sequelize
@@ -23,17 +26,22 @@ exports.CheckIn = async (req, res) => {
     // 4. Ubah cara membuat data baru menggunakan 'create' dari Sequelize
     const newRecord = await Presensi.create({
       userId: userId,
-      nama: userName,
       checkIn: waktuSekarang,
+      latitude: latitude, // <-- Simpan ke database
+      longitude: longitude, // <-- Simpan ke database
     });
 
     const formattedData = {
+      id: newRecord.id,
       userId: newRecord.userId,
-      nama: newRecord.nama,
       checkIn: format(newRecord.checkIn, "yyyy-MM-dd HH:mm:ssXXX", {
         timeZone,
       }),
       checkOut: null,
+      latitude: newRecord.latitude,
+      longitude: newRecord.longitude,
+      createdAt: newRecord.createdAt,
+      updatedAt: newRecord.updatedAt,
     };
 
     res.status(201).json({
@@ -54,7 +62,8 @@ exports.CheckIn = async (req, res) => {
 exports.CheckOut = async (req, res) => {
   // Gunakan try...catch
   try {
-    const { id: userId, nama: userName } = req.user;
+    const { id: userId } = req.user;
+    const userName = req.user?.nama || req.user?.name || ""; 
     const waktuSekarang = new Date();
 
     // Cari data di database
@@ -73,14 +82,18 @@ exports.CheckOut = async (req, res) => {
     await recordToUpdate.save();
 
     const formattedData = {
+      id: recordToUpdate.id,
       userId: recordToUpdate.userId,
-      nama: recordToUpdate.nama,
       checkIn: format(recordToUpdate.checkIn, "yyyy-MM-dd HH:mm:ssXXX", {
         timeZone,
       }),
       checkOut: format(recordToUpdate.checkOut, "yyyy-MM-dd HH:mm:ssXXX", {
         timeZone,
       }),
+      latitude: recordToUpdate.latitude,
+      longitude: recordToUpdate.longitude,
+      createdAt: recordToUpdate.createdAt,
+      updatedAt: recordToUpdate.updatedAt,
     };
 
     res.json({
@@ -101,8 +114,11 @@ exports.CheckOut = async (req, res) => {
 exports.updatePresensi = async (req, res) => {
   try {
     const presensiId = req.params.id;
-    const { checkIn, checkOut, nama } = req.body;
-    if (checkIn === undefined && checkOut === undefined && nama === undefined) {
+    const { checkIn, checkOut, latitude, longitude } = req.body;
+    if (checkIn === undefined &&
+      checkOut === undefined &&
+      latitude === undefined &&
+      longitude === undefined) {
       return res.status(400).json({
         message:
           "Request body tidak berisi data yang valid untuk diupdate (checkIn, checkOut, atau nama).",
@@ -117,7 +133,9 @@ exports.updatePresensi = async (req, res) => {
 
     recordToUpdate.checkIn = checkIn || recordToUpdate.checkIn;
     recordToUpdate.checkOut = checkOut || recordToUpdate.checkOut;
-    recordToUpdate.nama = nama || recordToUpdate.nama;
+    recordToUpdate.latitude = latitude || recordToUpdate.latitude;
+    recordToUpdate.longitude = longitude || recordToUpdate.longitude;
+
     await recordToUpdate.save();
 
     res.json({
@@ -160,3 +178,5 @@ exports.deletePresensi = async (req, res) => {
       .json({ message: "Terjadi kesalahan pada server", error: error.message });
   }
 };
+
+
