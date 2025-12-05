@@ -110,6 +110,9 @@ const ReportPage = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Check-Out
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Bukti Foto
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -121,26 +124,42 @@ const ReportPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {presensi.checkIn
-                        ? new Date(presensi.checkIn).toLocaleString(
-                          "id-ID",
-                          { timeZone: "Asia/Jakarta" }
-                        )
+                        ? new Date(presensi.checkIn).toLocaleString("id-ID", {
+                          timeZone: "Asia/Jakarta",
+                        })
                         : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {presensi.checkOut
-                        ? new Date(presensi.checkOut).toLocaleString(
-                          "id-ID",
-                          { timeZone: "Asia/Jakarta" }
-                        )
+                        ? new Date(presensi.checkOut).toLocaleString("id-ID", {
+                          timeZone: "Asia/Jakarta",
+                        })
                         : "Belum Check-Out"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {presensi.buktiFoto ? (
+                        <a
+                          href={`http://localhost:3001${presensi.buktiFoto}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-block"
+                        >
+                          <img
+                            src={`http://localhost:3001${presensi.buktiFoto}`}
+                            alt="Bukti presensi"
+                            className="h-16 w-16 object-cover rounded-md border"
+                          />
+                        </a>
+                      ) : (
+                        "-"
+                      )}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td
-                    colSpan={3}
+                    colSpan={4}
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     Tidak ada data yang ditemukan.

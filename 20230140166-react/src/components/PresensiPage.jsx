@@ -1,15 +1,21 @@
 // src/components/PresensiPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import Webcam from 'react-webcam';
 import axios from "axios";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-
-// Pastikan di index.css / App.css kamu tambahkan:
-// @import "leaflet/dist/leaflet.css";
 
 const PresensiPage = () => {
   const [coords, setCoords] = useState(null); // { lat, lng }
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  const [image, setImage] = useState(null);
+  const webcamRef = useRef(null);
+  const capture = useCallback(() => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setImage(imageSrc);
+  }, [webcamRef]);
+
 
   // Fungsi ambil token dari localStorage (bisa ganti sesuai proyekmu)
   const getToken = () => {
@@ -54,28 +60,38 @@ const PresensiPage = () => {
     setError("");
     setMessage("");
 
-    if (!coords) {
-      setError("Lokasi belum didapatkan. Mohon izinkan akses lokasi.");
+    if (!coords || !image) {
+      setError("Lokasi dan Foto wajib ada!");
       return;
     }
 
     try {
-      const config = buildAuthConfig();
+      const blob = await (await fetch(image)).blob();
+      const formData = new FormData();
+      formData.append("latitude", coords.lat);
+      formData.append("longitude", coords.lng);
+      formData.append("image", blob, "selfie.jpg");
+
+      const authConfig = buildAuthConfig();
 
       const response = await axios.post(
         "http://localhost:3001/api/presensi/check-in",
+        formData,
         {
-          latitude: coords.lat,
-          longitude: coords.lng,
-        },
-        config
+          ...authConfig,
+          headers: {
+            ...authConfig.headers,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
       setMessage(response.data.message || "Check-in berhasil.");
     } catch (err) {
+      console.error(err);
       setError(
         err.response?.data?.message ||
-          "Check-in gagal. Silakan coba lagi."
+        "Check-in gagal. Silakan coba lagi."
       );
     }
   };
@@ -105,7 +121,7 @@ const PresensiPage = () => {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Check-out gagal. Silakan coba lagi."
+        "Check-out gagal. Silakan coba lagi."
       );
     }
   };
@@ -131,6 +147,37 @@ const PresensiPage = () => {
             </MapContainer>
           </div>
         )}
+
+        <div className="my-4 border rounded-lg overflow-hidden bg-black">
+          {image ? (
+            <img src={image} alt="Selfie" className="w-full" />
+          ) : (
+            <Webcam
+              audio={false}
+              ref={webcamRef}
+              screenshotFormat="image/jpeg"
+              className="w-full"
+            />
+          )}
+        </div>
+
+        <div className="mb-4">
+          {!image ? (
+            <button
+              onClick={capture}
+              className="bg-blue-500 text-white px-4 py-2 rounded w-full"
+            >
+              Ambil Foto 📸
+            </button>
+          ) : (
+            <button
+              onClick={() => setImage(null)}
+              className="bg-gray-500 text-white px-4 py-2 rounded w-full"
+            >
+              Foto Ulang 📸
+            </button>
+          )}
+        </div>
 
         <div className="bg-white p-8 rounded-lg shadow-md w-full text-center">
           <h2 className="text-3xl font-bold mb-6 text-gray-800">

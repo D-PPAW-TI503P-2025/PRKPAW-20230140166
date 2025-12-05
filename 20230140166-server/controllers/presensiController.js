@@ -1,18 +1,54 @@
-// 1. Ganti sumber data dari array ke model Sequelize
 const { Presensi, User, Sequelize } = require("../models");
 const { format } = require("date-fns-tz");
 const { Op } = Sequelize;
 const timeZone = "Asia/Jakarta";
 
+const fs = require("fs");
+const path = require("path");
+const multer = require("multer");
+
+// Pastikan folder uploads selalu ada
+const uploadDir = path.join(__dirname, "..", "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || ".jpg";
+    const filename = `${req.user.id}-${Date.now()}${ext}`;
+    cb(null, filename);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Hanya file gambar yang diperbolehkan!"), false);
+  }
+};
+
+exports.upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+});
+
+// di CheckIn:
 exports.CheckIn = async (req, res) => {
-  // 2. Gunakan try...catch untuk error handling
   try {
     const { id: userId } = req.user;
-    const userName = req.user?.nama || req.user?.name || ""; 
+    const userName = req.user?.nama || req.user?.name || "";
     const { latitude, longitude } = req.body;
     const waktuSekarang = new Date();
 
-    // 3. Ubah cara mencari data menggunakan 'findOne' dari Sequelize
+    const buktiFoto = req.file
+      ? `/uploads/${path.basename(req.file.path)}`
+      : null;
+
     const existingRecord = await Presensi.findOne({
       where: { userId: userId, checkOut: null },
     });
@@ -23,12 +59,12 @@ exports.CheckIn = async (req, res) => {
         .json({ message: "Anda sudah melakukan check-in hari ini." });
     }
 
-    // 4. Ubah cara membuat data baru menggunakan 'create' dari Sequelize
     const newRecord = await Presensi.create({
       userId: userId,
       checkIn: waktuSekarang,
-      latitude: latitude, // <-- Simpan ke database
-      longitude: longitude, // <-- Simpan ke database
+      latitude: latitude,
+      longitude: longitude,
+      buktiFoto: buktiFoto,
     });
 
     const formattedData = {
@@ -42,6 +78,7 @@ exports.CheckIn = async (req, res) => {
       longitude: newRecord.longitude,
       createdAt: newRecord.createdAt,
       updatedAt: newRecord.updatedAt,
+      buktiFoto: newRecord.buktiFoto,
     };
 
     res.status(201).json({
@@ -53,6 +90,7 @@ exports.CheckIn = async (req, res) => {
       data: formattedData,
     });
   } catch (error) {
+    console.error(error);
     res
       .status(500)
       .json({ message: "Terjadi kesalahan pada server", error: error.message });
@@ -63,7 +101,7 @@ exports.CheckOut = async (req, res) => {
   // Gunakan try...catch
   try {
     const { id: userId } = req.user;
-    const userName = req.user?.nama || req.user?.name || ""; 
+    const userName = req.user?.nama || req.user?.name || "";
     const waktuSekarang = new Date();
 
     // Cari data di database

@@ -63,7 +63,7 @@ function App() {
     <Router>
       <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-black to-fuchsia-950 text-slate-100">
         {/* NAVBAR */}
-        <nav className="px-6 py-4 bg-slate-950/70 backdrop-blur border-b border-slate-800 flex gap-6 items-center">
+        <nav className="px-6 py-4 bg-slate-950/70 backdrop-blur border-b border-slate-800 flex gap-6 items-center sticky top-0">
           {!isLoggedIn() && (
             <>
               <Link
